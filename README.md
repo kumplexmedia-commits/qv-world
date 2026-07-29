@@ -17,6 +17,8 @@ The Compose service `godot-headless` already mounts:
 
 - `godot-export-templates:/root/.local/share/godot/export_templates`
 
+This volume is treated as an external export template cache, so it should be populated using `make populate-templates` before running the headless service.
+
 To export builds successfully, ensure the mounted volume contains the required Godot export templates under:
 
 - `/root/.local/share/godot/export_templates/4.7.stable`

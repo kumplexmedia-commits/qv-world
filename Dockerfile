@@ -21,7 +21,7 @@ FROM ubuntu:22.04 AS godot-dev
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcursor1 libxinerama1 libxrandr2 libxext6 libx11-6 \
-    libasound2 libgl1-mesa-glx ca-certificates \
+    libfontconfig1 libasound2 libgl1-mesa-glx ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=godot-binary /opt/godot/godot /usr/local/bin/godot

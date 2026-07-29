@@ -21,21 +21,21 @@ check_templates() {
 }
 
 if ! check_templates; then
-    echo "WARNING: Godot export templates not found at $TEMPLATES_DIR"
+    echo "INFO: Godot export templates not found at $TEMPLATES_DIR; attempting local fallback."
     if [ -f "$LOCAL_ZIP" ]; then
         echo "Found local export template ZIP: $LOCAL_ZIP"
         mkdir -p "$TEMPLATES_DIR"
         unzip -oq "$LOCAL_ZIP" -d "$TEMPLATES_DIR"
         echo "Extracted local export templates into $TEMPLATES_DIR"
-    elif [ -d "$LOCAL_DIR1" ]; then
+    elif [ -d "$LOCAL_DIR1" ] && find "$LOCAL_DIR1" -mindepth 1 | grep -q .; then
         echo "Found local export template directory: $LOCAL_DIR1"
         mkdir -p "$TEMPLATES_DIR"
-        cp -r "$LOCAL_DIR1"/* "$TEMPLATES_DIR"/
+        cp -r "$LOCAL_DIR1"/. "$TEMPLATES_DIR"/
         echo "Copied local export templates into $TEMPLATES_DIR"
-    elif [ -d "$LOCAL_DIR2" ]; then
+    elif [ -d "$LOCAL_DIR2" ] && find "$LOCAL_DIR2" -mindepth 1 | grep -q .; then
         echo "Found local export template directory: $LOCAL_DIR2"
         mkdir -p "$TEMPLATES_DIR"
-        cp -r "$LOCAL_DIR2"/* "$TEMPLATES_DIR"/
+        cp -r "$LOCAL_DIR2"/. "$TEMPLATES_DIR"/
         echo "Copied local export templates into $TEMPLATES_DIR"
     else
         echo ""
