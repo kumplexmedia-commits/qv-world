@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://0rsnvh84brat"]
+
+[sub_resource type="Theme" id="Theme_tv02g"]
+
+[node name="Control" type="Control" unique_id=775334789]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+offset_top = -4.0
+offset_right = 3.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+offset_transform_enabled = true
+theme = SubResource("Theme_tv02g")

@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  godot-editor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: godot-dev
+    container_name: qv-world-editor
+    image: qv-world:dev
+    volumes:
+      - .:/project
+      - godot-cache:/root/.local/share/godot
+      - godot-config:/root/.config/godot
+    ports:
+      - "6006:6006"
+      - "6007:6007"
+      - "6008:6008"
+    environment:
+      - DISPLAY=${DISPLAY}
+    working_dir: /project
+    stdin_open: true
+    tty: true
+    networks:
+      - qv-world
+
+  godot-headless:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: godot-export
+    container_name: qv-world-headless
+    image: qv-world:export
+    volumes:
+      - .:/project
+      - godot-export-templates:/root/.local/share/godot/export_templates
+      - ./export:/project/export
+    working_dir: /project
+    networks:
+      - qv-world
+
+volumes:
+  godot-cache:
+  godot-config:
+  godot-export-templates:
+
+networks:
+  qv-world:
+    driver: bridge
