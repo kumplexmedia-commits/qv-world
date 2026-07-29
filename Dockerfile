@@ -50,10 +50,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=godot-binary /opt/godot/godot /usr/local/bin/godot
 
 WORKDIR /project
-RUN mkdir -p "/root/.local/share/godot/export_templates/${GODOT_VERSION}"
 
-# Export templates should be available from the mounted local cache at runtime,
-# so this stage does not attempt to download them during build.
+# Ensure export templates directory exists and fetch templates at image build time
+RUN mkdir -p "/root/.local/share/godot/export_templates/${GODOT_VERSION}" && \
+    echo "Downloading Godot export templates from ${GODOT_TEMPLATES_URL}..." && \
+    curl -L -f -o /tmp/godot_export_templates.zip "${GODOT_TEMPLATES_URL}" && \
+    unzip -q /tmp/godot_export_templates.zip -d /tmp/godot_export_templates && \
+    mv /tmp/godot_export_templates/* "/root/.local/share/godot/export_templates/${GODOT_VERSION}/" && \
+    rm -f /tmp/godot_export_templates.zip
+
+# Export templates should be available from the built image at runtime.
+# If you prefer to override templates at runtime, mount a directory at
+# /root/.local/share/godot/export_templates/${GODOT_VERSION}
 COPY docker-export-entrypoint.sh /usr/local/bin/docker-export-entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/docker-export-entrypoint.sh"]
 CMD ["--headless", "--export-debug", "Linux", "export/qv-world.x86_64"]
