@@ -11,12 +11,16 @@ signal bake_finished
 @export var player: Node3D
 @export var mesh_size := Vector3(256, 512, 256)
 @export var min_rebake_distance: float = 64.0
+@export var max_rebake_shift: float = 128.0
+@export var prediction_time: float = 0.25
 @export var bake_cooldown: float = 1.0
 @export_group("Debug")
 @export var log_timing: bool = false
+@export var debug_draw_bounds: bool = false
 
 var _scene_geometry: NavigationMeshSourceGeometryData3D
 var _current_center := Vector3(INF,INF,INF)
+var _debug_box: MeshInstance3D
 
 var _bake_task_id: int = -1
 var _bake_task_timer: float = 0.0
@@ -44,6 +48,13 @@ func _ready():
 	# your scatter nodes have finished setting up. Here, we just defer one frame so that nodes
 	# after this one in the tree get set up first
 	parse_scene.call_deferred()
+
+	if debug_draw_bounds:
+		_debug_box = MeshInstance3D.new()
+		_debug_box.mesh = BoxMesh.new()
+		_debug_box.visible = false
+		_debug_box.material_override = StandardMaterial3D.new()
+		add_child(_debug_box)
 
 
 func set_enabled(p_value: bool) -> void:
@@ -103,10 +114,15 @@ func _process(p_delta: float) -> void:
 	var track_pos := player.global_position
 	if player is CharacterBody3D:
 		# Center on where the player is likely _going to be_:
-		track_pos += player.velocity * bake_cooldown
+		track_pos += player.velocity * prediction_time
 	
-	if track_pos.distance_squared_to(_current_center) >= min_rebake_distance * min_rebake_distance:
+	var shift = track_pos - _current_center
+	if shift.length() >= min_rebake_distance and shift.length() <= max_rebake_shift:
 		_current_center = track_pos
+		_rebake(_current_center)
+	elif shift.length() > max_rebake_shift:
+		# If the player moved a very large distance, clamp the center shift so we don't bake a massive region.
+		_current_center += shift.normalized() * max_rebake_shift
 		_rebake(_current_center)
 
 
@@ -119,7 +135,8 @@ func _rebake(p_center: Vector3) -> void:
 
 func _task_bake(p_center: Vector3) -> void:
 	var nav_mesh: NavigationMesh = template.duplicate()
-	nav_mesh.filter_baking_aabb = AABB(-mesh_size * 0.5, mesh_size)
+	var bake_aabb := AABB(-mesh_size * 0.5, mesh_size)
+	nav_mesh.filter_baking_aabb = bake_aabb
 	nav_mesh.filter_baking_aabb_offset = p_center
 	var source_geometry: NavigationMeshSourceGeometryData3D
 	source_geometry = _scene_geometry.duplicate()
@@ -129,6 +146,12 @@ func _task_bake(p_center: Vector3) -> void:
 		aabb.position += nav_mesh.filter_baking_aabb_offset
 		var faces: PackedVector3Array = terrain.generate_nav_mesh_source_geometry(aabb, false)
 		source_geometry.add_faces(faces, Transform3D.IDENTITY)
+	
+	if debug_draw_bounds and _debug_box:
+		var box_transform := Transform3D.IDENTITY
+		box_transform.origin = p_center
+		_debug_box.transform = box_transform
+		_debug_box.visible = true
 	
 	if source_geometry.has_data():
 		NavigationServer3D.bake_from_source_geometry_data(nav_mesh, source_geometry)
@@ -146,6 +169,9 @@ func _bake_finished(p_nav_mesh: NavigationMesh) -> void:
 	
 	if p_nav_mesh:
 		_nav_region.navigation_mesh = p_nav_mesh
+	
+	if debug_draw_bounds and _debug_box:
+		_debug_box.visible = false
 	
 	bake_finished.emit()
 	assert(!NavigationServer3D.region_get_use_edge_connections(_nav_region.get_region_rid()))

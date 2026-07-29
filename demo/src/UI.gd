@@ -3,7 +3,9 @@ extends Control
 
 var player: Node
 var visible_mode: int = 1
-
+var show_settings: bool = false
+var objective_position: Vector3 = Vector3.ZERO
+var objective_radius: float = 20.0
 
 func _init() -> void:
 	RenderingServer.set_debug_generate_wireframes(true)
@@ -11,9 +13,17 @@ func _init() -> void:
 
 func _process(p_delta) -> void:
 	$Label.text = "FPS: %d\n" % Engine.get_frames_per_second()
-	if(visible_mode == 1):
-		$Label.text += "Move Speed: %.1f\n" % player.MOVE_SPEED if player else ""
-		$Label.text += "Position: %.1v\n" % player.global_position if player else ""
+	if player:
+		$Label.text += "Move Speed: %.1f\n" % player.MOVE_SPEED
+		$Label.text += "Position: %.1v\n" % player.global_position
+		var objective_distance = player.global_position.distance_to(objective_position)
+		if objective_distance <= objective_radius:
+			$Label.text += "Objective: Reached the beacon!\n"
+		else:
+			$Label.text += "Objective: Reach the beacon (%.1f meters)\n" % objective_distance
+		$Label.text += "Objective radius: %.1f\n" % objective_radius
+	$Label.text += "Press F3 to toggle the settings panel.\n"
+	if visible_mode == 1:
 		$Label.text += """
 			Player
 			Move: WASDEQ,Space,Mouse
@@ -21,6 +31,7 @@ func _process(p_delta) -> void:
 			Camera View: V
 			Gravity toggle: G
 			Collision toggle: C
+			Toggle settings: F3
 
 			Window
 			Quit: F8
@@ -28,8 +39,13 @@ func _process(p_delta) -> void:
 			Render mode: F10
 			Full screen: F11
 			Mouse toggle: Escape / F12
-			"""
-
+		"""
+	if show_settings:
+		$Label.text += "\n=== Settings Panel ===\n"
+		$Label.text += "  - Panel state: %s\n" % (show_settings ? "ON" : "OFF")
+		$Label.text += "  - Objective radius: %.1f\n" % objective_radius
+		$Label.text += "  - Settings visible: %s\n" % (str(show_settings))
+		$Label.text += "  - Toggle settings: F3\n"
 
 func _unhandled_key_input(p_event: InputEvent) -> void:
 	if p_event is InputEventKey and p_event.pressed:
@@ -46,6 +62,9 @@ func _unhandled_key_input(p_event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 			KEY_F11:
 				toggle_fullscreen()
+				get_viewport().set_input_as_handled()
+			KEY_F3:
+				show_settings = !show_settings
 				get_viewport().set_input_as_handled()
 			KEY_ESCAPE, KEY_F12:
 				if Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:

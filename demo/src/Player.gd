@@ -25,6 +25,33 @@ extends CharacterBody3D
 		$CollisionShapeBody.disabled = ! collision_enabled
 		$CollisionShapeRay.disabled = ! collision_enabled
 
+var _jump_player: AudioStreamPlayer
+var _toggle_player: AudioStreamPlayer
+
+func _ready() -> void:
+	_jump_player = AudioStreamPlayer.new()
+	_toggle_player = AudioStreamPlayer.new()
+	_jump_player.stream = _create_tone(880.0, 0.08)
+	_toggle_player.stream = _create_tone(440.0, 0.05)
+	add_child(_jump_player)
+	add_child(_toggle_player)
+
+func _create_tone(freq: float, duration: float) -> AudioStreamSample:
+	var sample = AudioStreamSample.new()
+	sample.format = AudioStreamSample.FORMAT_16_BITS
+	sample.stereo = false
+	sample.mix_rate = 44100
+	var frames = int(duration * sample.mix_rate)
+	var data = PackedByteArray()
+	data.resize(frames * 2)
+	for i in range(frames):
+		var t = float(i) / sample.mix_rate
+		var value = int(clamp(sin(2.0 * PI * freq * t) * 0.25, -1.0, 1.0) * 32767)
+		data[i * 2] = value & 0xFF
+		data[i * 2 + 1] = (value >> 8) & 0xFF
+	sample.data = data
+	sample.loop_mode = AudioStreamSample.LOOP_DISABLED
+	return sample
 
 func _physics_process(p_delta) -> void:
 	var direction: Vector3 = get_camera_relative_input()
@@ -71,10 +98,15 @@ func _input(p_event: InputEvent) -> void:
 		if p_event.pressed:
 			if p_event.keycode == KEY_V:
 				first_person = ! first_person
+				_toggle_player.play()
 			elif p_event.keycode == KEY_G:
 				gravity_enabled = ! gravity_enabled
+				_toggle_player.play()
 			elif p_event.keycode == KEY_C:
 				collision_enabled = ! collision_enabled
+				_toggle_player.play()
+			elif p_event.keycode == KEY_SPACE:
+				_jump_player.play()
 
 		# Else if up/down released
 		elif p_event.keycode in [ KEY_Q, KEY_E, KEY_SPACE ]:
