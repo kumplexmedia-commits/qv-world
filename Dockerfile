@@ -40,6 +40,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Allow override of templates at build time
 ARG GODOT_VERSION=4.7.stable
 ARG GODOT_TEMPLATES_URL="https://downloads.tuxfamily.org/godotengine/4.7/Godot_v4.7-stable_export_templates.zip"
+# SKIP_TEMPLATES when true prevents downloading templates during image build (useful for local dev or if you mount at runtime)
+ARG SKIP_TEMPLATES=false
 
 # Install runtime libs Godot expects plus tools to fetch templates
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -51,15 +53,19 @@ COPY --from=godot-binary /opt/godot/godot /usr/local/bin/godot
 
 WORKDIR /project
 
-# Ensure export templates directory exists and fetch templates at image build time
+# Ensure export templates directory exists and optionally fetch templates at image build time
 RUN mkdir -p "/root/.local/share/godot/export_templates/${GODOT_VERSION}" && \
-    echo "Downloading Godot export templates from ${GODOT_TEMPLATES_URL}..." && \
-    curl -L -f -o /tmp/godot_export_templates.zip "${GODOT_TEMPLATES_URL}" && \
-    unzip -q /tmp/godot_export_templates.zip -d /tmp/godot_export_templates && \
-    mv /tmp/godot_export_templates/* "/root/.local/share/godot/export_templates/${GODOT_VERSION}/" && \
-    rm -f /tmp/godot_export_templates.zip
+    if [ "${SKIP_TEMPLATES}" = "true" ]; then \
+      echo "SKIP_TEMPLATES=true: skipping download of Godot export templates"; \
+    else \
+      echo "Downloading Godot export templates from ${GODOT_TEMPLATES_URL}..." && \
+      curl -L -f -o /tmp/godot_export_templates.zip "${GODOT_TEMPLATES_URL}" && \
+      unzip -q /tmp/godot_export_templates.zip -d /tmp/godot_export_templates && \
+      mv /tmp/godot_export_templates/* "/root/.local/share/godot/export_templates/${GODOT_VERSION}/" && \
+      rm -f /tmp/godot_export_templates.zip; \
+    fi
 
-# Export templates should be available from the built image at runtime.
+# Export templates should be available from the built image at runtime unless SKIP_TEMPLATES is true.
 # If you prefer to override templates at runtime, mount a directory at
 # /root/.local/share/godot/export_templates/${GODOT_VERSION}
 COPY docker-export-entrypoint.sh /usr/local/bin/docker-export-entrypoint.sh
