@@ -2,7 +2,7 @@
 # Stage 1: Godot binary provider (shared by dev + export stages)
 FROM ubuntu:22.04 AS godot-binary
 
-ENV DEBIAN_FRONTEND=noninteractive
+ENV buildTag=1.0
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget ca-certificates unzip \
     && rm -rf /var/lib/apt/lists/*
